@@ -310,6 +310,9 @@
                 
                 <div id="conversionRows">
                     <!-- Conversion rows will be populated here -->
+                    <div class="currency-row" style="text-align: center; padding: 20px; color: #666;">
+                        <div>正在加载汇率数据...</div>
+                    </div>
                 </div>
                 
                 <div class="update-info" id="updateInfo">
@@ -396,8 +399,12 @@
         }
 
         function updateConversions() {
+            console.log('🔄 Updating conversions...');
+            
             const amount = parseFloat(baseAmount.value) || 0;
             const baseCurrencyData = currencyData[currentBaseCurrency];
+            
+            console.log('Amount:', amount, 'Base currency:', currentBaseCurrency);
             
             amountLabel.textContent = '输入' + baseCurrencyData.nameCN + '金额';
             tableTitle.textContent = baseCurrencyData.nameCN + ' ' + amount + ' ' + baseCurrencyData.symbol + ' 换算结果';
@@ -406,12 +413,16 @@
                 return curr !== currentBaseCurrency;
             });
             
+            console.log('Target currencies:', targetCurrencies.length);
+            
             conversionRows.innerHTML = '';
             
-            targetCurrencies.forEach(function(currency) {
+            targetCurrencies.forEach(function(currency, index) {
                 const converted = convertCurrency(amount, currentBaseCurrency, currency);
                 const rate = convertCurrency(1, currentBaseCurrency, currency);
                 const currData = currencyData[currency];
+                
+                console.log('Converting to', currency, ':', converted);
                 
                 const row = document.createElement('div');
                 row.className = 'currency-row';
@@ -428,6 +439,8 @@
                 
                 conversionRows.appendChild(row);
             });
+            
+            console.log('✅ Conversions updated, rows added:', targetCurrencies.length);
         }
 
         function setBaseCurrency(currency) {
@@ -449,25 +462,33 @@
             updateConversions();
         }
 
-        // API configuration for real-time rates
+        // API configuration with CORS proxies for local use
         const API_ENDPOINTS = [
             {
-                name: 'ExchangeRate-API (Free)',
-                url: 'https://api.exchangerate-api.com/v4/latest/USD',
+                name: 'AllOrigins Proxy',
+                url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://api.exchangerate-api.com/v4/latest/USD'),
+                parse: function(data) {
+                    const content = JSON.parse(data.contents);
+                    return content.rates;
+                }
+            },
+            {
+                name: 'CORS Anywhere',
+                url: 'https://cors-anywhere.herokuapp.com/https://api.exchangerate-api.com/v4/latest/USD',
                 parse: function(data) {
                     return data.rates;
                 }
             },
             {
-                name: 'Exchange Rates Host',
+                name: 'ExchangeRate Host (CORS Enabled)',
                 url: 'https://api.exchangerate.host/latest?base=USD',
                 parse: function(data) {
                     return data.rates;
                 }
             },
             {
-                name: 'Fixer.io Alternative',
-                url: 'https://api.fixer.io/latest?base=USD',
+                name: 'JSONProxy',
+                url: 'https://jsonp.afeld.me/?url=' + encodeURIComponent('https://api.exchangerate-api.com/v4/latest/USD'),
                 parse: function(data) {
                     return data.rates;
                 }
@@ -584,11 +605,35 @@
         // Make fetchExchangeRates available globally
         window.fetchExchangeRates = fetchExchangeRates;
 
-        // Initialize
-        updateConversions();
-        updateTimestamp();
-        fetchExchangeRates();
-        
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Currency app initializing...');
+            
+            // Initialize display
+            updateConversions();
+            updateTimestamp();
+            
+            // Try to fetch live rates
+            fetchExchangeRates();
+            
+            console.log('✅ Currency app initialized');
+        });
+
+        // Also initialize if DOM is already ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+
+        function initializeApp() {
+            console.log('🚀 Currency app initializing...');
+            updateConversions();
+            updateTimestamp();
+            fetchExchangeRates();
+            console.log('✅ Currency app initialized');
+        }
+
         // Auto-refresh every 5 minutes
         setInterval(fetchExchangeRates, 5 * 60 * 1000);
     </script>
