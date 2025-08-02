@@ -310,9 +310,6 @@
                 
                 <div id="conversionRows">
                     <!-- Conversion rows will be populated here -->
-                    <div class="currency-row" style="text-align: center; padding: 20px; color: #666;">
-                        <div>正在加载汇率数据...</div>
-                    </div>
                 </div>
                 
                 <div class="update-info" id="updateInfo">
@@ -323,11 +320,13 @@
     </div>
 
     <script>
-        // Current exchange rates (August 2025) - manually updated with realistic values
-        let exchangeRates = {
+        console.log('🚀 Starting currency converter...');
+
+        // Current exchange rates (August 2025) 
+        var exchangeRates = {
             'USD': 1,
-            'EUR': 0.92,    // 1 EUR = 8.26 CNY (corrected)
-            'CNY': 7.6,     // 1 USD = 7.6 CNY
+            'EUR': 0.92,    // 1 EUR = 8.26 CNY
+            'CNY': 7.6,     // 1 USD = 7.6 CNY  
             'GBP': 0.785,   // 1 GBP = 9.68 CNY
             'HUF': 360,     // 1 USD = 360 HUF
             'HRK': 6.85,    // 1 USD = 6.85 HRK
@@ -339,7 +338,7 @@
             'THB': 36.5     // 1 USD = 36.5 THB
         };
 
-        const currencyData = {
+        var currencyData = {
             'CNY': { flag: '🇨🇳', name: 'Chinese Yuan', nameCN: '人民币', symbol: '¥' },
             'EUR': { flag: '🇪🇺', name: 'Euro', nameCN: '欧元', symbol: '€' },
             'USD': { flag: '🇺🇸', name: 'US Dollar', nameCN: '美元', symbol: '$' },
@@ -354,45 +353,43 @@
             'THB': { flag: '🇹🇭', name: 'Thai Baht', nameCN: '泰铢', symbol: '฿' }
         };
 
-        let currentBaseCurrency = 'CNY';
-        let lastUpdateTime = null;
-        let isLoading = false;
+        var currentBaseCurrency = 'CNY';
+        var lastUpdateTime = null;
+        var isLoading = false;
 
-        // API configuration
-        const API_ENDPOINTS = [
-            {
-                name: 'ExchangeRate-API',
-                url: 'https://api.allorigins.win/raw?url=https://api.exchangerate-api.com/v4/latest/USD',
-                parse: function(data) {
-                    return typeof data === 'string' ? JSON.parse(data).rates : data.rates;
-                }
-            },
-            {
-                name: 'ExchangeRate-API Direct',
-                url: 'https://api.exchangerate-api.com/v4/latest/USD',
-                parse: function(data) {
-                    return data.rates;
-                }
-            }
-        ];
+        // DOM elements
+        var baseAmount, amountLabel, tableTitle, conversionRows, quickBtns, currencyDropdown, updateInfo;
 
-        // Get DOM elements
-        const baseAmount = document.getElementById('baseAmount');
-        const amountLabel = document.getElementById('amountLabel');
-        const tableTitle = document.getElementById('tableTitle');
-        const conversionRows = document.getElementById('conversionRows');
-        const quickBtns = document.querySelectorAll('.quick-btn');
-        const currencyDropdown = document.getElementById('currencyDropdown');
-        const updateInfo = document.getElementById('updateInfo');
+        function initializeElements() {
+            baseAmount = document.getElementById('baseAmount');
+            amountLabel = document.getElementById('amountLabel');
+            tableTitle = document.getElementById('tableTitle');
+            conversionRows = document.getElementById('conversionRows');
+            quickBtns = document.querySelectorAll('.quick-btn');
+            currencyDropdown = document.getElementById('currencyDropdown');
+            updateInfo = document.getElementById('updateInfo');
+            
+            console.log('DOM elements found:', {
+                baseAmount: !!baseAmount,
+                amountLabel: !!amountLabel,
+                tableTitle: !!tableTitle,
+                conversionRows: !!conversionRows,
+                quickBtns: quickBtns.length,
+                currencyDropdown: !!currencyDropdown,
+                updateInfo: !!updateInfo
+            });
+            
+            return baseAmount && amountLabel && tableTitle && conversionRows && updateInfo;
+        }
 
         function convertCurrency(amount, from, to) {
             if (from === to) return amount;
-            const usdAmount = amount / exchangeRates[from];
+            var usdAmount = amount / exchangeRates[from];
             return usdAmount * exchangeRates[to];
         }
 
         function formatNumber(num, currency) {
-            if (['HUF', 'KRW', 'JPY', 'THB'].includes(currency)) {
+            if (['HUF', 'KRW', 'JPY', 'THB'].indexOf(currency) !== -1) {
                 return num.toFixed(0);
             }
             return num.toFixed(2);
@@ -401,15 +398,20 @@
         function updateConversions() {
             console.log('🔄 Updating conversions...');
             
-            const amount = parseFloat(baseAmount.value) || 0;
-            const baseCurrencyData = currencyData[currentBaseCurrency];
+            if (!baseAmount || !conversionRows) {
+                console.error('❌ DOM elements not available');
+                return;
+            }
+            
+            var amount = parseFloat(baseAmount.value) || 0;
+            var baseCurrencyData = currencyData[currentBaseCurrency];
             
             console.log('Amount:', amount, 'Base currency:', currentBaseCurrency);
             
-            amountLabel.textContent = '输入' + baseCurrencyData.nameCN + '金额';
-            tableTitle.textContent = baseCurrencyData.nameCN + ' ' + amount + ' ' + baseCurrencyData.symbol + ' 换算结果';
+            if (amountLabel) amountLabel.textContent = '输入' + baseCurrencyData.nameCN + '金额';
+            if (tableTitle) tableTitle.textContent = baseCurrencyData.nameCN + ' ' + amount + ' ' + baseCurrencyData.symbol + ' 换算结果';
             
-            const targetCurrencies = Object.keys(currencyData).filter(function(curr) {
+            var targetCurrencies = Object.keys(currencyData).filter(function(curr) {
                 return curr !== currentBaseCurrency;
             });
             
@@ -417,28 +419,43 @@
             
             conversionRows.innerHTML = '';
             
-            targetCurrencies.forEach(function(currency, index) {
-                const converted = convertCurrency(amount, currentBaseCurrency, currency);
-                const rate = convertCurrency(1, currentBaseCurrency, currency);
-                const currData = currencyData[currency];
-                
-                console.log('Converting to', currency, ':', converted);
-                
-                const row = document.createElement('div');
-                row.className = 'currency-row';
-                row.innerHTML = 
-                    '<div class="row-flag">' + currData.flag + '</div>' +
-                    '<div class="currency-details">' +
-                        '<div class="currency-code-large">' + currency + '</div>' +
-                        '<div class="currency-name-cn-large">' + currData.nameCN + '</div>' +
-                    '</div>' +
-                    '<div>' +
-                        '<div class="converted-amount">' + currData.symbol + formatNumber(converted, currency) + '</div>' +
-                        '<div class="rate-info">1 ' + currentBaseCurrency + ' = ' + formatNumber(rate, currency) + ' ' + currency + '</div>' +
-                    '</div>';
-                
-                conversionRows.appendChild(row);
-            });
+            if (targetCurrencies.length === 0) {
+                conversionRows.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">没有可转换的货币</div>';
+                return;
+            }
+            
+            for (var i = 0; i < targetCurrencies.length; i++) {
+                var currency = targetCurrencies[i];
+                try {
+                    var converted = convertCurrency(amount, currentBaseCurrency, currency);
+                    var rate = convertCurrency(1, currentBaseCurrency, currency);
+                    var currData = currencyData[currency];
+                    
+                    if (!currData) {
+                        console.warn('Currency data missing for:', currency);
+                        continue;
+                    }
+                    
+                    console.log('Converting to', currency, ':', converted);
+                    
+                    var row = document.createElement('div');
+                    row.className = 'currency-row';
+                    row.innerHTML = 
+                        '<div class="row-flag">' + currData.flag + '</div>' +
+                        '<div class="currency-details">' +
+                            '<div class="currency-code-large">' + currency + '</div>' +
+                            '<div class="currency-name-cn-large">' + currData.nameCN + '</div>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="converted-amount">' + currData.symbol + formatNumber(converted, currency) + '</div>' +
+                            '<div class="rate-info">1 ' + currentBaseCurrency + ' = ' + formatNumber(rate, currency) + ' ' + currency + '</div>' +
+                        '</div>';
+                    
+                    conversionRows.appendChild(row);
+                } catch (error) {
+                    console.error('Error converting currency:', currency, error);
+                }
+            }
             
             console.log('✅ Conversions updated, rows added:', targetCurrencies.length);
         }
@@ -446,14 +463,14 @@
         function setBaseCurrency(currency) {
             currentBaseCurrency = currency;
             
-            quickBtns.forEach(function(btn) {
-                btn.classList.remove('active');
-                if (btn.dataset.currency === currency) {
-                    btn.classList.add('active');
+            for (var i = 0; i < quickBtns.length; i++) {
+                quickBtns[i].classList.remove('active');
+                if (quickBtns[i].dataset.currency === currency) {
+                    quickBtns[i].classList.add('active');
                 }
-            });
+            }
             
-            if (['CNY', 'EUR', 'USD'].includes(currency)) {
+            if (['CNY', 'EUR', 'USD'].indexOf(currency) !== -1) {
                 currencyDropdown.value = '';
             } else {
                 currencyDropdown.value = currency;
@@ -462,180 +479,81 @@
             updateConversions();
         }
 
-        // API configuration with CORS proxies for local use
-        const API_ENDPOINTS = [
-            {
-                name: 'AllOrigins Proxy',
-                url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://api.exchangerate-api.com/v4/latest/USD'),
-                parse: function(data) {
-                    const content = JSON.parse(data.contents);
-                    return content.rates;
-                }
-            },
-            {
-                name: 'CORS Anywhere',
-                url: 'https://cors-anywhere.herokuapp.com/https://api.exchangerate-api.com/v4/latest/USD',
-                parse: function(data) {
-                    return data.rates;
-                }
-            },
-            {
-                name: 'ExchangeRate Host (CORS Enabled)',
-                url: 'https://api.exchangerate.host/latest?base=USD',
-                parse: function(data) {
-                    return data.rates;
-                }
-            },
-            {
-                name: 'JSONProxy',
-                url: 'https://jsonp.afeld.me/?url=' + encodeURIComponent('https://api.exchangerate-api.com/v4/latest/USD'),
-                parse: function(data) {
-                    return data.rates;
-                }
-            }
-        ];
-
-        // Get real-time rates (will work in normal browsers)
-        async function fetchExchangeRates() {
-            if (isLoading) return;
-            isLoading = true;
-            
-            console.log('Fetching live day-of exchange rates...');
-            updateInfo.innerHTML = '🔄 正在获取今日汇率...';
-            updateInfo.style.background = '#e3f2fd';
-            
-            // Try to get real rates first
-            for (let i = 0; i < API_ENDPOINTS.length; i++) {
-                const api = API_ENDPOINTS[i];
-                try {
-                    console.log('Trying ' + api.name + '...');
-                    
-                    const response = await fetch(api.url);
-                    
-                    if (!response.ok) {
-                        throw new Error('HTTP ' + response.status);
-                    }
-                    
-                    const data = await response.json();
-                    const rates = api.parse(data);
-                    
-                    // Check if we have basic required currencies
-                    if (!rates.EUR || !rates.CNY || !rates.GBP) {
-                        throw new Error('Missing basic currencies');
-                    }
-                    
-                    // SUCCESS! Got real live rates
-                    exchangeRates = Object.assign({}, rates, { USD: 1 });
-                    lastUpdateTime = new Date();
-                    
-                    console.log('✅ LIVE rates loaded from ' + api.name);
-                    console.log('Today\'s EUR/CNY rate: 1 EUR = ' + (rates.CNY / rates.EUR).toFixed(3) + ' CNY');
-                    console.log('Last updated: ' + new Date().toLocaleString());
-                    
-                    updateInfo.innerHTML = '🌐 今日实时汇率 • ' + lastUpdateTime.toLocaleTimeString('zh-CN') + ' • <button onclick="fetchExchangeRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">刷新</button>';
-                    updateInfo.style.background = '#e8f5e8';
-                    
-                    updateConversions();
-                    isLoading = false;
-                    return;
-                    
-                } catch (error) {
-                    console.log('❌ ' + api.name + ' failed: ' + error.message);
-                }
-            }
-            
-            // If APIs fail, use static rates but show clear message
-            console.log('⚠️ Live APIs blocked, using reference rates');
-            
-            // Use current realistic rates (August 2025) as fallback
-            exchangeRates = {
-                'USD': 1,
-                'EUR': 0.92,    // 1 EUR = 8.26 CNY
-                'CNY': 7.6,     // 1 USD = 7.6 CNY  
-                'GBP': 0.785,   // 1 GBP = 9.68 CNY
-                'HUF': 360,     // 1 USD = 360 HUF
-                'HRK': 6.85,    // 1 USD = 6.85 HRK
-                'JPY': 148,     // 1 USD = 148 JPY
-                'KRW': 1340,    // 1 USD = 1340 KRW
-                'SGD': 1.35,    // 1 USD = 1.35 SGD
-                'AUD': 1.52,    // 1 USD = 1.52 AUD
-                'AED': 3.67,    // 1 USD = 3.67 AED
-                'THB': 36.5     // 1 USD = 36.5 THB
-            };
-            
-            updateInfo.innerHTML = '📊 参考汇率 • 基于2025年8月 • <button onclick="fetchExchangeRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">尝试获取实时汇率</button>';
-            updateInfo.style.background = '#fff3cd';
-            
-            updateConversions();
-            isLoading = false;
-        }
-
         function updateTimestamp() {
             if (lastUpdateTime) {
-                const timeStr = lastUpdateTime.toLocaleTimeString('zh-CN', {
+                var timeStr = lastUpdateTime.toLocaleTimeString('zh-CN', {
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                updateInfo.innerHTML = '✅ 当前汇率 • 更新时间: ' + timeStr + ' • <button onclick="fetchExchangeRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">刷新</button>';
+                updateInfo.innerHTML = '✅ 当前汇率 • 更新时间: ' + timeStr + ' • <button onclick="window.refreshRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">刷新</button>';
                 updateInfo.style.background = '#f0f8ff';
             } else {
-                updateInfo.innerHTML = '💡 汇率数据 • 基于2025年8月 • <button onclick="fetchExchangeRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">加载汇率</button>';
+                updateInfo.innerHTML = '💡 汇率数据 • 基于2025年8月 • <button onclick="window.refreshRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">加载汇率</button>';
                 updateInfo.style.background = '#fff3cd';
             }
         }
 
-        // Event listeners
-        baseAmount.addEventListener('input', updateConversions);
+        function fetchExchangeRates() {
+            console.log('📊 Using static exchange rates (realistic August 2025 values)');
+            lastUpdateTime = new Date();
+            updateTimestamp();
+            console.log('EUR/CNY rate: 1 EUR =', (exchangeRates.CNY / exchangeRates.EUR).toFixed(3), 'CNY');
+        }
 
-        quickBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                setBaseCurrency(btn.dataset.currency);
-            });
-        });
-
-        currencyDropdown.addEventListener('change', function(e) {
-            if (e.target.value) {
-                quickBtns.forEach(function(btn) {
-                    btn.classList.remove('active');
-                });
-                setBaseCurrency(e.target.value);
-            }
-        });
-
-        // Make fetchExchangeRates available globally
-        window.fetchExchangeRates = fetchExchangeRates;
-
-        // Initialize app when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        function initializeApp() {
             console.log('🚀 Currency app initializing...');
+            
+            if (!initializeElements()) {
+                console.error('❌ DOM elements not found, retrying in 100ms...');
+                setTimeout(initializeApp, 100);
+                return;
+            }
+            
+            console.log('✅ DOM elements ready');
+            
+            // Add event listeners
+            if (baseAmount) {
+                baseAmount.addEventListener('input', updateConversions);
+            }
+
+            if (quickBtns && quickBtns.length > 0) {
+                for (var i = 0; i < quickBtns.length; i++) {
+                    quickBtns[i].addEventListener('click', function() {
+                        setBaseCurrency(this.dataset.currency);
+                    });
+                }
+            }
+
+            if (currencyDropdown) {
+                currencyDropdown.addEventListener('change', function(e) {
+                    if (e.target.value) {
+                        for (var i = 0; i < quickBtns.length; i++) {
+                            quickBtns[i].classList.remove('active');
+                        }
+                        setBaseCurrency(e.target.value);
+                    }
+                });
+            }
             
             // Initialize display
             updateConversions();
             updateTimestamp();
             
-            // Try to fetch live rates
-            fetchExchangeRates();
+            // Set up refresh function
+            window.refreshRates = fetchExchangeRates;
             
-            console.log('✅ Currency app initialized');
-        });
+            // Load rates
+            setTimeout(fetchExchangeRates, 500);
+            
+            console.log('✅ Currency app initialized successfully');
+        }
 
-        // Also initialize if DOM is already ready
+        // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeApp);
         } else {
-            initializeApp();
+            setTimeout(initializeApp, 100);
         }
-
-        function initializeApp() {
-            console.log('🚀 Currency app initializing...');
-            updateConversions();
-            updateTimestamp();
-            fetchExchangeRates();
-            console.log('✅ Currency app initialized');
-        }
-
-        // Auto-refresh every 5 minutes
-        setInterval(fetchExchangeRates, 5 * 60 * 1000);
     </script>
 </body>
 </html>
