@@ -322,12 +322,12 @@
     <script>
         console.log('🚀 Starting currency converter...');
 
-        // Current exchange rates (August 2025) 
+        // Current exchange rates (August 2025) - Updated with correct USD/CNY rate
         var exchangeRates = {
             'USD': 1,
-            'EUR': 0.92,    // 1 EUR = 8.26 CNY
-            'CNY': 7.6,     // 1 USD = 7.6 CNY  
-            'GBP': 0.785,   // 1 GBP = 9.68 CNY
+            'EUR': 0.92,    // 1 EUR = 7.83 CNY (7.2 / 0.92)
+            'CNY': 7.2,     // 1 USD = 7.2 CNY (CORRECTED)
+            'GBP': 0.785,   // 1 GBP = 9.17 CNY  
             'HUF': 360,     // 1 USD = 360 HUF
             'HRK': 6.85,    // 1 USD = 6.85 HRK
             'JPY': 148,     // 1 USD = 148 JPY
@@ -494,10 +494,87 @@
         }
 
         function fetchExchangeRates() {
-            console.log('📊 Using static exchange rates (realistic August 2025 values)');
-            lastUpdateTime = new Date();
-            updateTimestamp();
-            console.log('EUR/CNY rate: 1 EUR =', (exchangeRates.CNY / exchangeRates.EUR).toFixed(3), 'CNY');
+            if (isLoading) return;
+            isLoading = true;
+            
+            console.log('🌐 Fetching LIVE market rates...');
+            updateInfo.innerHTML = '🔄 正在获取实时汇率...';
+            updateInfo.style.background = '#e3f2fd';
+            
+            // Try multiple APIs for live rates
+            var apiEndpoints = [
+                {
+                    name: 'ExchangeRate-API',
+                    url: 'https://api.exchangerate-api.com/v4/latest/USD'
+                },
+                {
+                    name: 'Exchange Rates Host',
+                    url: 'https://api.exchangerate.host/latest?base=USD'
+                },
+                {
+                    name: 'AllOrigins Proxy',
+                    url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://api.exchangerate-api.com/v4/latest/USD')
+                }
+            ];
+            
+            tryNextAPI(0, apiEndpoints);
+        }
+        
+        function tryNextAPI(index, apiEndpoints) {
+            if (index >= apiEndpoints.length) {
+                // All APIs failed, use fallback
+                console.log('⚠️ All APIs failed, using fallback rates');
+                isLoading = false;
+                updateInfo.innerHTML = '📊 参考汇率 • 基于2025年8月 • <button onclick="window.refreshRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">重试获取实时汇率</button>';
+                updateInfo.style.background = '#fff3cd';
+                return;
+            }
+            
+            var api = apiEndpoints[index];
+            console.log('Trying', api.name + '...');
+            
+            fetch(api.url)
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    var rates;
+                    
+                    // Handle different API response formats
+                    if (api.name === 'AllOrigins Proxy') {
+                        var content = JSON.parse(data.contents);
+                        rates = content.rates;
+                    } else {
+                        rates = data.rates;
+                    }
+                    
+                    // Validate we have required currencies
+                    if (!rates.EUR || !rates.CNY || !rates.GBP) {
+                        throw new Error('Missing required currencies');
+                    }
+                    
+                    // SUCCESS! Update with live rates
+                    exchangeRates = Object.assign({}, rates, { USD: 1 });
+                    lastUpdateTime = new Date();
+                    isLoading = false;
+                    
+                    console.log('✅ LIVE rates loaded from', api.name);
+                    console.log('Current USD/CNY rate: 1 USD =', rates.CNY.toFixed(3), 'CNY');
+                    console.log('Current EUR/CNY rate: 1 EUR =', (rates.CNY / rates.EUR).toFixed(3), 'CNY');
+                    
+                    updateInfo.innerHTML = '🌐 实时汇率 • ' + lastUpdateTime.toLocaleTimeString('zh-CN') + ' • <button onclick="window.refreshRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">刷新</button>';
+                    updateInfo.style.background = '#e8f5e8';
+                    
+                    updateConversions();
+                })
+                .catch(function(error) {
+                    console.log('❌', api.name, 'failed:', error.message);
+                    // Try next API
+                    tryNextAPI(index + 1, apiEndpoints);
+                });
         }
 
         function initializeApp() {
