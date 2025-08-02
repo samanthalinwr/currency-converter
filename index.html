@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行货币换算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 8px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 12px 15px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            margin-bottom: 2px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.8rem;
+        }
+
+        .main-content {
+            padding: 12px;
+        }
+
+        .input-section {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .currency-selection {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quick-btn {
+            background: white;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            min-width: 65px;
+            justify-content: center;
+        }
+
+        .quick-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        .quick-btn.active {
+            border-color: #4facfe;
+            background: #f0f8ff;
+            transform: translateY(-1px);
+        }
+
+        .flag {
+            font-size: 1rem;
+        }
+
+        .dropdown-compact {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 80px;
+        }
+
+        .dropdown-compact:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .amount-container {
+            text-align: center;
+        }
+
+        .amount-label {
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .amount-input {
+            width: 100%;
+            max-width: 160px;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            color: #333;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .amount-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 8px rgba(79, 172, 254, 0.3);
+        }
+
+        .conversion-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 12px;
+            text-align: center;
+        }
+
+        .table-header h2 {
+            font-size: 1rem;
+            margin-bottom: 2px;
+        }
+
+        .table-header p {
+            opacity: 0.9;
+            font-size: 0.7rem;
+        }
+
+        .currency-row {
+            display: grid;
+            grid-template-columns: 35px 1fr auto;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: all 0.2s ease;
+        }
+
+        .currency-row:hover {
+            background: #f8f9fa;
+        }
+
+        .currency-row:last-child {
+            border-bottom: none;
+        }
+
+        .row-flag {
+            font-size: 1.3rem;
+        }
+
+        .currency-details {
+            margin-left: 8px;
+        }
+
+        .currency-code-large {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 1px;
+        }
+
+        .currency-name-cn-large {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .converted-amount {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #2c3e50;
+            text-align: right;
+        }
+
+        .rate-info {
+            font-size: 0.6rem;
+            color: #666;
+            text-align: right;
+            margin-top: 1px;
+        }
+
+        .update-info {
+            text-align: center;
+            padding: 8px;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 0.65rem;
+        }
+
+        @media (max-width: 430px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+
+            .main-content {
+                padding: 10px;
+            }
+
+            .quick-btn {
+                font-size: 0.7rem;
+                padding: 5px 8px;
+                min-width: 60px;
+            }
+
+            .dropdown-compact {
+                font-size: 0.65rem;
+                min-width: 75px;
+            }
+
+            .currency-row {
+                padding: 6px 10px;
+            }
+
+            .converted-amount {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 旅行货币换算器</h1>
+            <p>英国·匈牙利·克罗地亚旅行必备</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <div class="currency-selection">
+                    <div class="quick-btn active" data-currency="CNY">
+                        <span class="flag">🇨🇳</span>
+                        <span>CNY</span>
+                    </div>
+                    <div class="quick-btn" data-currency="EUR">
+                        <span class="flag">🇪🇺</span>
+                        <span>EUR</span>
+                    </div>
+                    <div class="quick-btn" data-currency="USD">
+                        <span class="flag">🇺🇸</span>
+                        <span>USD</span>
+                    </div>
+                    <select class="dropdown-compact" id="currencyDropdown">
+                        <option value="">其他</option>
+                        <option value="GBP">🇬🇧 英镑</option>
+                        <option value="HUF">🇭🇺 福林</option>
+                        <option value="HRK">🇭🇷 库纳</option>
+                        <option value="JPY">🇯🇵 日元</option>
+                        <option value="KRW">🇰🇷 韩元</option>
+                        <option value="SGD">🇸🇬 新元</option>
+                        <option value="AUD">🇦🇺 澳元</option>
+                        <option value="AED">🇦🇪 迪拉姆</option>
+                        <option value="THB">🇹🇭 泰铢</option>
+                    </select>
+                </div>
+                
+                <div class="amount-container">
+                    <div class="amount-label" id="amountLabel">输入金额</div>
+                    <input type="number" class="amount-input" id="baseAmount" value="100" min="0" step="0.01">
+                </div>
+            </div>
+
+            <div class="conversion-table">
+                <div class="table-header">
+                    <h2 id="tableTitle">人民币 100 元换算结果</h2>
+                    <p>实时汇率换算</p>
+                </div>
+                
+                <div id="conversionRows">
+                    <!-- Conversion rows will be populated here -->
+                </div>
+                
+                <div class="update-info" id="updateInfo">
+                    💡 汇率基于2025年8月数据 • 仅供参考
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Current exchange rates (August 2025) - manually updated with realistic values
+        let exchangeRates = {
+            'USD': 1,
+            'EUR': 0.92,    // 1 EUR = 8.26 CNY (corrected)
+            'CNY': 7.6,     // 1 USD = 7.6 CNY
+            'GBP': 0.785,   // 1 GBP = 9.68 CNY
+            'HUF': 360,     // 1 USD = 360 HUF
+            'HRK': 6.85,    // 1 USD = 6.85 HRK
+            'JPY': 148,     // 1 USD = 148 JPY
+            'KRW': 1340,    // 1 USD = 1340 KRW
+            'SGD': 1.35,    // 1 USD = 1.35 SGD
+            'AUD': 1.52,    // 1 USD = 1.52 AUD
+            'AED': 3.67,    // 1 USD = 3.67 AED
+            'THB': 36.5     // 1 USD = 36.5 THB
+        };
+
+        const currencyData = {
+            'CNY': { flag: '🇨🇳', name: 'Chinese Yuan', nameCN: '人民币', symbol: '¥' },
+            'EUR': { flag: '🇪🇺', name: 'Euro', nameCN: '欧元', symbol: '€' },
+            'USD': { flag: '🇺🇸', name: 'US Dollar', nameCN: '美元', symbol: '$' },
+            'GBP': { flag: '🇬🇧', name: 'British Pound', nameCN: '英镑', symbol: '£' },
+            'HUF': { flag: '🇭🇺', name: 'Hungarian Forint', nameCN: '匈牙利福林', symbol: 'Ft' },
+            'HRK': { flag: '🇭🇷', name: 'Croatian Kuna', nameCN: '克罗地亚库纳', symbol: 'kn' },
+            'JPY': { flag: '🇯🇵', name: 'Japanese Yen', nameCN: '日元', symbol: '¥' },
+            'KRW': { flag: '🇰🇷', name: 'Korean Won', nameCN: '韩元', symbol: '₩' },
+            'SGD': { flag: '🇸🇬', name: 'Singapore Dollar', nameCN: '新加坡元', symbol: 'S$' },
+            'AUD': { flag: '🇦🇺', name: 'Australian Dollar', nameCN: '澳元', symbol: 'A$' },
+            'AED': { flag: '🇦🇪', name: 'UAE Dirham', nameCN: '阿联酋迪拉姆', symbol: 'د.إ' },
+            'THB': { flag: '🇹🇭', name: 'Thai Baht', nameCN: '泰铢', symbol: '฿' }
+        };
+
+        let currentBaseCurrency = 'CNY';
+        let lastUpdateTime = null;
+        let isLoading = false;
+
+        // API configuration
+        const API_ENDPOINTS = [
+            {
+                name: 'ExchangeRate-API',
+                url: 'https://api.allorigins.win/raw?url=https://api.exchangerate-api.com/v4/latest/USD',
+                parse: function(data) {
+                    return typeof data === 'string' ? JSON.parse(data).rates : data.rates;
+                }
+            },
+            {
+                name: 'ExchangeRate-API Direct',
+                url: 'https://api.exchangerate-api.com/v4/latest/USD',
+                parse: function(data) {
+                    return data.rates;
+                }
+            }
+        ];
+
+        // Get DOM elements
+        const baseAmount = document.getElementById('baseAmount');
+        const amountLabel = document.getElementById('amountLabel');
+        const tableTitle = document.getElementById('tableTitle');
+        const conversionRows = document.getElementById('conversionRows');
+        const quickBtns = document.querySelectorAll('.quick-btn');
+        const currencyDropdown = document.getElementById('currencyDropdown');
+        const updateInfo = document.getElementById('updateInfo');
+
+        function convertCurrency(amount, from, to) {
+            if (from === to) return amount;
+            const usdAmount = amount / exchangeRates[from];
+            return usdAmount * exchangeRates[to];
+        }
+
+        function formatNumber(num, currency) {
+            if (['HUF', 'KRW', 'JPY', 'THB'].includes(currency)) {
+                return num.toFixed(0);
+            }
+            return num.toFixed(2);
+        }
+
+        function updateConversions() {
+            const amount = parseFloat(baseAmount.value) || 0;
+            const baseCurrencyData = currencyData[currentBaseCurrency];
+            
+            amountLabel.textContent = '输入' + baseCurrencyData.nameCN + '金额';
+            tableTitle.textContent = baseCurrencyData.nameCN + ' ' + amount + ' ' + baseCurrencyData.symbol + ' 换算结果';
+            
+            const targetCurrencies = Object.keys(currencyData).filter(function(curr) {
+                return curr !== currentBaseCurrency;
+            });
+            
+            conversionRows.innerHTML = '';
+            
+            targetCurrencies.forEach(function(currency) {
+                const converted = convertCurrency(amount, currentBaseCurrency, currency);
+                const rate = convertCurrency(1, currentBaseCurrency, currency);
+                const currData = currencyData[currency];
+                
+                const row = document.createElement('div');
+                row.className = 'currency-row';
+                row.innerHTML = 
+                    '<div class="row-flag">' + currData.flag + '</div>' +
+                    '<div class="currency-details">' +
+                        '<div class="currency-code-large">' + currency + '</div>' +
+                        '<div class="currency-name-cn-large">' + currData.nameCN + '</div>' +
+                    '</div>' +
+                    '<div>' +
+                        '<div class="converted-amount">' + currData.symbol + formatNumber(converted, currency) + '</div>' +
+                        '<div class="rate-info">1 ' + currentBaseCurrency + ' = ' + formatNumber(rate, currency) + ' ' + currency + '</div>' +
+                    '</div>';
+                
+                conversionRows.appendChild(row);
+            });
+        }
+
+        function setBaseCurrency(currency) {
+            currentBaseCurrency = currency;
+            
+            quickBtns.forEach(function(btn) {
+                btn.classList.remove('active');
+                if (btn.dataset.currency === currency) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            if (['CNY', 'EUR', 'USD'].includes(currency)) {
+                currencyDropdown.value = '';
+            } else {
+                currencyDropdown.value = currency;
+            }
+            
+            updateConversions();
+        }
+
+        // API configuration for real-time rates
+        const API_ENDPOINTS = [
+            {
+                name: 'ExchangeRate-API (Free)',
+                url: 'https://api.exchangerate-api.com/v4/latest/USD',
+                parse: function(data) {
+                    return data.rates;
+                }
+            },
+            {
+                name: 'Exchange Rates Host',
+                url: 'https://api.exchangerate.host/latest?base=USD',
+                parse: function(data) {
+                    return data.rates;
+                }
+            },
+            {
+                name: 'Fixer.io Alternative',
+                url: 'https://api.fixer.io/latest?base=USD',
+                parse: function(data) {
+                    return data.rates;
+                }
+            }
+        ];
+
+        // Get real-time rates (will work in normal browsers)
+        async function fetchExchangeRates() {
+            if (isLoading) return;
+            isLoading = true;
+            
+            console.log('Fetching live day-of exchange rates...');
+            updateInfo.innerHTML = '🔄 正在获取今日汇率...';
+            updateInfo.style.background = '#e3f2fd';
+            
+            // Try to get real rates first
+            for (let i = 0; i < API_ENDPOINTS.length; i++) {
+                const api = API_ENDPOINTS[i];
+                try {
+                    console.log('Trying ' + api.name + '...');
+                    
+                    const response = await fetch(api.url);
+                    
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    
+                    const data = await response.json();
+                    const rates = api.parse(data);
+                    
+                    // Check if we have basic required currencies
+                    if (!rates.EUR || !rates.CNY || !rates.GBP) {
+                        throw new Error('Missing basic currencies');
+                    }
+                    
+                    // SUCCESS! Got real live rates
+                    exchangeRates = Object.assign({}, rates, { USD: 1 });
+                    lastUpdateTime = new Date();
+                    
+                    console.log('✅ LIVE rates loaded from ' + api.name);
+                    console.log('Today\'s EUR/CNY rate: 1 EUR = ' + (rates.CNY / rates.EUR).toFixed(3) + ' CNY');
+                    console.log('Last updated: ' + new Date().toLocaleString());
+                    
+                    updateInfo.innerHTML = '🌐 今日实时汇率 • ' + lastUpdateTime.toLocaleTimeString('zh-CN') + ' • <button onclick="fetchExchangeRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">刷新</button>';
+                    updateInfo.style.background = '#e8f5e8';
+                    
+                    updateConversions();
+                    isLoading = false;
+                    return;
+                    
+                } catch (error) {
+                    console.log('❌ ' + api.name + ' failed: ' + error.message);
+                }
+            }
+            
+            // If APIs fail, use static rates but show clear message
+            console.log('⚠️ Live APIs blocked, using reference rates');
+            
+            // Use current realistic rates (August 2025) as fallback
+            exchangeRates = {
+                'USD': 1,
+                'EUR': 0.92,    // 1 EUR = 8.26 CNY
+                'CNY': 7.6,     // 1 USD = 7.6 CNY  
+                'GBP': 0.785,   // 1 GBP = 9.68 CNY
+                'HUF': 360,     // 1 USD = 360 HUF
+                'HRK': 6.85,    // 1 USD = 6.85 HRK
+                'JPY': 148,     // 1 USD = 148 JPY
+                'KRW': 1340,    // 1 USD = 1340 KRW
+                'SGD': 1.35,    // 1 USD = 1.35 SGD
+                'AUD': 1.52,    // 1 USD = 1.52 AUD
+                'AED': 3.67,    // 1 USD = 3.67 AED
+                'THB': 36.5     // 1 USD = 36.5 THB
+            };
+            
+            updateInfo.innerHTML = '📊 参考汇率 • 基于2025年8月 • <button onclick="fetchExchangeRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">尝试获取实时汇率</button>';
+            updateInfo.style.background = '#fff3cd';
+            
+            updateConversions();
+            isLoading = false;
+        }
+
+        function updateTimestamp() {
+            if (lastUpdateTime) {
+                const timeStr = lastUpdateTime.toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                updateInfo.innerHTML = '✅ 当前汇率 • 更新时间: ' + timeStr + ' • <button onclick="fetchExchangeRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">刷新</button>';
+                updateInfo.style.background = '#f0f8ff';
+            } else {
+                updateInfo.innerHTML = '💡 汇率数据 • 基于2025年8月 • <button onclick="fetchExchangeRates()" style="background:none;border:none;color:#4facfe;cursor:pointer;text-decoration:underline;">加载汇率</button>';
+                updateInfo.style.background = '#fff3cd';
+            }
+        }
+
+        // Event listeners
+        baseAmount.addEventListener('input', updateConversions);
+
+        quickBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                setBaseCurrency(btn.dataset.currency);
+            });
+        });
+
+        currencyDropdown.addEventListener('change', function(e) {
+            if (e.target.value) {
+                quickBtns.forEach(function(btn) {
+                    btn.classList.remove('active');
+                });
+                setBaseCurrency(e.target.value);
+            }
+        });
+
+        // Make fetchExchangeRates available globally
+        window.fetchExchangeRates = fetchExchangeRates;
+
+        // Initialize
+        updateConversions();
+        updateTimestamp();
+        fetchExchangeRates();
+        
+        // Auto-refresh every 5 minutes
+        setInterval(fetchExchangeRates, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
