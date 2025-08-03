@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅行货币换算器</title>
+    <title>三米的旅行货币换算器</title>
     <style>
         * {
             margin: 0;
@@ -270,7 +270,7 @@
         <div class="main-content">
             <div class="input-section">
                 <div class="currency-selection">
-                    <div class="quick-btn active" data-currency="CNY">
+                   <div class="quick-btn active" data-currency="CNY">
                         <span class="flag">🇨🇳</span>
                         <span>CNY</span>
                     </div>
@@ -278,9 +278,13 @@
                         <span class="flag">🇪🇺</span>
                         <span>EUR</span>
                     </div>
-                    <div class="quick-btn" data-currency="USD">
-                        <span class="flag">🇺🇸</span>
-                        <span>USD</span>
+                    <div class="quick-btn" data-currency="HUF">
+                        <span class="flag">🇭🇺</span>
+                        <span>HUF</span>
+                    </div>
+                    <div class="quick-btn" data-currency="HRK">
+                        <span class="flag">🇭🇷</span>
+                        <span>HRK</span>
                     </div>
                     <select class="dropdown-compact" id="currencyDropdown">
                         <option value="">其他</option>
@@ -470,7 +474,7 @@
                 }
             }
             
-            if (['CNY', 'EUR', 'USD'].indexOf(currency) !== -1) {
+            if (['CNY', 'EUR', 'HUF','HRK'].indexOf(currency) !== -1) {
                 currencyDropdown.value = '';
             } else {
                 currencyDropdown.value = currency;
